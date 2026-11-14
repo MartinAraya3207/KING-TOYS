@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KingToys - POS System</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --kt-red: #e62429;
+            --kt-red-glow: rgba(230, 36, 41, 0.4);
+            --kt-yellow: #fbc02d;
+            --kt-yellow-glow: rgba(251, 192, 45, 0.4);
+            --bg-darker: #09090b;
+            --bg-dark: #121217;
+            --bg-panel: #1a1a24;
+            --bg-glass: rgba(26, 26, 36, 0.7);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --sidebar-width: 280px;
+            --topbar-height: 70px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-darker);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(230, 36, 41, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(251, 192, 45, 0.05), transparent 25%);
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-dark);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .brand {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--kt-red), var(--kt-yellow), transparent);
+        }
+
+        .brand h1 { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.8rem; letter-spacing: 2px; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .brand h1 .king { color: var(--text-main); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .brand h1 .toys { color: var(--kt-red); text-shadow: 0 0 15px var(--kt-red-glow); }
+        
+        .brand-subtitle { font-family: 'Orbitron', sans-serif; font-size: 0.65rem; color: var(--kt-yellow); letter-spacing: 4px; margin-top: 5px; text-shadow: 0 0 10px var(--kt-yellow-glow); }
+
+        .nav-menu { padding: 20px 0; flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item { padding: 0 20px; }
+        .nav-link {
+            display: flex; align-items: center; padding: 14px 20px; color: var(--text-muted);
+            text-decoration: none; border-radius: 12px; font-weight: 500; font-size: 0.95rem; transition: var(--transition);
+            position: relative; overflow: hidden;
+        }
+
+        .nav-link i { font-size: 1.2rem; margin-right: 15px; width: 24px; text-align: center; transition: var(--transition); }
+        .nav-link:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.03); transform: translateX(5px); }
+        .nav-link:hover i { color: var(--kt-yellow); transform: scale(1.1); }
+        .nav-link.active { color: var(--text-main); background: linear-gradient(90deg, rgba(230, 36, 41, 0.1), transparent); border-left: 3px solid var(--kt-red); }
+        .nav-link.active i { color: var(--kt-red); text-shadow: 0 0 10px var(--kt-red-glow); }
+
+        .user-profile { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; gap: 15px; }
+        .avatar {
+            width: 45px; height: 45px; border-radius: 12px; background: linear-gradient(135deg, var(--kt-red), var(--kt-yellow));
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: 'Orbitron', sans-serif;
+            color: var(--bg-darker); box-shadow: 0 0 15px rgba(230, 36, 41, 0.3);
+        }
+        .user-info { flex-grow: 1; }
+        .user-name { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .user-role { font-size: 0.75rem; color: var(--kt-yellow); margin-top: 2px; }
+        .logout-btn { color: var(--text-muted); cursor: pointer; transition: var(--transition); }
+        .logout-btn:hover { color: var(--kt-red); transform: scale(1.1); }
+
+        .main-wrapper { margin-left: var(--sidebar-width); flex-grow: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        .topbar {
+            height: var(--topbar-height); background: var(--bg-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; align-items: center; justify-content: space-between;
+            padding: 0 40px; position: sticky; top: 0; z-index: 90;
+        }
+
+        .page-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .page-title i { color: var(--kt-red); }
+
+        .search-container { position: relative; width: 450px; }
+        .search-input {
+            width: 100%; height: 42px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 21px; padding: 0 20px 0 45px; color: var(--text-main); font-family: 'Inter', sans-serif;
+            font-size: 0.9rem; transition: var(--transition);
+        }
+        .search-input:focus { outline: none; background: rgba(0, 0, 0, 0.5); border-color: var(--kt-yellow); box-shadow: 0 0 15px var(--kt-yellow-glow); }
+        .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-muted); transition: var(--transition); }
+        .search-input:focus + .search-icon { color: var(--kt-yellow); }
+        .search-shortcut {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; pointer-events: none;
+        }
+
+        .content-area { padding: 40px; flex-grow: 1; position: relative; }
+
+        .glass-panel {
+            background: var(--bg-panel); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px;
+            padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; overflow: hidden;
+        }
+        .glass-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+
+        .btn-custom {
+            background: transparent; border: none; padding: 10px 24px; border-radius: 8px; font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+        }
+        .btn-primary-custom { background: linear-gradient(135deg, var(--kt-red), #b71c1c); color: white; box-shadow: 0 4px 15px var(--kt-red-glow); }
+        .btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--kt-red-glow); filter: brightness(1.1); color: white;}
+        .btn-outline-custom { border: 1px solid var(--kt-yellow); color: var(--kt-yellow); }
+        .btn-outline-custom:hover { background: var(--kt-yellow); color: var(--bg-darker); box-shadow: 0 0 15px var(--kt-yellow-glow); }
+
+        .mt-3 { margin-top: 1rem; }
+        .mt-4 { margin-top: 1.5rem; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-darker); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--kt-red); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1><span class="king">KING</span><span class="toys">TOYS</span></h1>
+            <div class="brand-subtitle">ATACAMA SYSTEM</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item"><a href="/" class="nav-link active" id="nav-dashboard"><i class="fa-solid fa-chart-line"></i> Dashboard</a></div>
+            <div class="nav-item"><a href="/caja" class="nav-link" id="nav-caja"><i class="fa-solid fa-cash-register"></i> Punto de Venta</a></div>
+            <div class="nav-item"><a href="/retiro-rapido" class="nav-link" id="nav-retiro"><i class="fa-solid fa-bolt"></i> Retiro Rápido</a></div>
+            <div class="nav-item"><a href="/reservas" class="nav-link" id="nav-reservas"><i class="fa-brands fa-instagram"></i> Reservas IG</a></div>
+            <div class="nav-item"><a href="/inventario" class="nav-link" id="nav-inventario"><i class="fa-solid fa-boxes-stacked"></i> Inventario</a></div>
+            <div class="nav-item"><a href="/cuadre" class="nav-link" id="nav-cuadre"><i class="fa-solid fa-scale-balanced"></i> Cuadre de Caja</a></div>
+        </nav>
+
+        <div class="user-profile">
+            <div class="avatar">V1</div>
+            <div class="user-info">
+                <div class="user-name">Admin Local</div>
+                <div class="user-role">Vendedor Principal</div>
+            </div>
+            <a href="/logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="topbar">
+            <div class="page-title">
+                <i class="fa-solid fa-microchip"></i>
+                <span id="header-title">PANEL DE CONTROL</span>
+            </div>
+            
+            <form action="/buscar" method="GET" onsubmit="return validarBusqueda(event)">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="global-search" name="q" placeholder="Buscar producto, @usuario o código de reserva..." autocomplete="off">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <span class="search-shortcut">Ctrl + K</span>
+                </div>
+            </form>
+        </header>
+
+        <main class="content-area">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script>
+        function validarBusqueda(e) {
+            const searchInput = document.getElementById('global-search');
+            if(searchInput.value.trim().length < 3) {
+                e.preventDefault();
+                searchInput.style.borderColor = '#e62429';
+                searchInput.style.boxShadow = '0 0 15px rgba(230, 36, 41, 0.4)';
+                searchInput.style.transform = 'translateX(5px)';
+                setTimeout(() => searchInput.style.transform = 'translateX(-5px)', 50);
+                setTimeout(() => searchInput.style.transform = 'translateX(5px)', 100);
+                setTimeout(() => searchInput.style.transform = 'translateX(0)', 150);
+                setTimeout(() => { searchInput.style.borderColor = 'rgba(255, 255, 255, 0.1)'; searchInput.style.boxShadow = 'none'; }, 2000);
+                return false;
+            }
+            return true;
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'k') { e.preventDefault(); document.getElementById('global-search').focus(); }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentPath = window.location.pathname;
+            const links = document.querySelectorAll('.nav-link');
+            
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentPath || 
+                   (currentPath === '/' && link.getAttribute('id') === 'nav-dashboard')) {
+                    link.classList.add('active');
+                    document.getElementById('header-title').innerText = link.innerText.trim().toUpperCase();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

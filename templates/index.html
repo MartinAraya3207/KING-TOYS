@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .dashboard-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+    .stat-card { grid-column: span 3; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .stat-title { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+    .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .stat-icon.red { background: rgba(230, 36, 41, 0.1); color: var(--kt-red); }
+    .stat-icon.yellow { background: rgba(251, 192, 45, 0.1); color: var(--kt-yellow); }
+    .stat-icon.blue { background: rgba(0, 243, 255, 0.1); color: #00f3ff; }
+    .stat-icon.green { background: rgba(0, 230, 118, 0.1); color: #00e676; }
+    .stat-value { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 700; color: var(--text-main); line-height: 1; }
+    .stat-footer { margin-top: 15px; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; }
+    .trend-up { color: #00e676; } .trend-down { color: var(--kt-red); }
+    .activity-section { grid-column: span 8; min-height: 400px; display: flex; flex-direction: column; }
+    .quick-actions { grid-column: span 4; display: flex; flex-direction: column; gap: 15px; }
+    .section-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; color: var(--text-main); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .section-title i { color: var(--kt-yellow); }
+    .custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .custom-table th { text-align: left; padding: 15px; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .custom-table td { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.02); font-size: 0.9rem; color: var(--text-main); }
+    .custom-table tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+    
+    .badge { 
+        padding: 6px 12px; 
+        border-radius: 20px; 
+        font-size: 0.75rem; 
+        font-weight: 600; 
+        letter-spacing: 0.5px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .badge.pending { background: rgba(251, 192, 45, 0.15); color: var(--kt-yellow); border: 1px solid rgba(251, 192, 45, 0.3); }
+    .badge.completed { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+    
+    .action-card { background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit; }
+    .action-card:hover { background: rgba(230, 36, 41, 0.05); border-color: rgba(230, 36, 41, 0.3); transform: translateY(-2px); }
+    .action-icon { width: 45px; height: 45px; background: var(--bg-dark); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--kt-red); border: 1px solid rgba(230, 36, 41, 0.2); }
+    .action-text h4 { font-family: 'Inter', sans-serif; font-size: 0.95rem; margin-bottom: 2px; }
+    .action-text p { font-size: 0.75rem; color: var(--text-muted); }
+    
+    /* Scroll customizado para la caja de alertas */
+    .alert-scroll::-webkit-scrollbar { width: 4px; }
+    .alert-scroll::-webkit-scrollbar-track { background: transparent; }
+    .alert-scroll::-webkit-scrollbar-thumb { background: var(--kt-red); border-radius: 4px; }
+    
+    @media (max-width: 1400px) { .stat-card { grid-column: span 6; } .activity-section { grid-column: span 12; } .quick-actions { grid-column: span 12; display: grid; grid-template-columns: repeat(2, 1fr); } }
+</style>
+
+<div class="dashboard-grid">
+    <!-- Ventas Hoy -->
+    <div class="glass-panel stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Ingresos Hoy</div>
+            <div class="stat-icon red"><i class="fa-solid fa-dollar-sign"></i></div>
+        </div>
+        <div>
+            <div class="stat-value">$145.990</div>
+            <div class="stat-footer trend-up"><i class="fa-solid fa-arrow-trend-up"></i><span>+12.5% vs ayer</span></div>
+        </div>
+    </div>
+    
+    <!-- Retiros Pendientes -->
+    <div class="glass-panel stat-card" style="border-bottom: 3px solid var(--kt-yellow);">
+        <div class="stat-header">
+            <div class="stat-title">Retiros IG (Pendientes)</div>
+            <div class="stat-icon yellow"><i class="fa-solid fa-box-open"></i></div>
+        </div>
+        <div>
+            <div class="stat-value text-gradient-yellow">14</div>
+            <div class="stat-footer" style="color: var(--text-muted);"><i class="fa-regular fa-clock"></i><span>Requieren validación</span></div>
+        </div>
+    </div>
+    
+    <!-- Artículos Vendidos -->
+    <div class="glass-panel stat-card">
+        <div class="stat-header">
+            <div class="stat-title">Artículos Vendidos</div>
+            <div class="stat-icon blue"><i class="fa-solid fa-tag"></i></div>
+        </div>
+        <div>
+            <div class="stat-value">32</div>
+            <div class="stat-footer trend-up"><i class="fa-solid fa-arrow-trend-up"></i><span>Manga, Sobres, Figuras</span></div>
+        </div>
+    </div>
+    
+    <!-- Alertas de Stock -->
+    <div class="glass-panel stat-card" style="border-bottom: 3px solid var(--kt-red);">
+        <div class="stat-header">
+            <div class="stat-title" style="color: var(--kt-red);">Alertas de Stock</div>
+            <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        </div>
+        <div>
+            <div class="stat-value text-gradient-red">5</div>
+            <!-- Contenedor con scroll para los productos -->
+            <div class="alert-scroll" style="margin-top: 10px; max-height: 55px; overflow-y: auto; padding-right: 5px;">
+                <div style="font-size: 0.7rem; color: #ff4d4d; margin-bottom: 4px;"><i class="fa-solid fa-circle-exclamation"></i> Bebida Monster Verde (2 und)</div>
+                <div style="font-size: 0.7rem; color: #ff4d4d; margin-bottom: 4px;"><i class="fa-solid fa-circle-exclamation"></i> Auto Dodge Charger F&F (0 und)</div>
+                <div style="font-size: 0.7rem; color: #ff4d4d; margin-bottom: 4px;"><i class="fa-solid fa-circle-exclamation"></i> Fig. Satoru Gojo JJK (1 und)</div>
+                <div style="font-size: 0.7rem; color: #ff4d4d; margin-bottom: 4px;"><i class="fa-solid fa-circle-exclamation"></i> Álbum Stitch Panini (3 und)</div>
+                <div style="font-size: 0.7rem; color: #ff4d4d;"><i class="fa-solid fa-circle-exclamation"></i> Manga Berserk Vol. 1 (1 und)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actividad Reciente -->
+    <div class="glass-panel activity-section">
+        <h3 class="section-title"><i class="fa-solid fa-list-check"></i> Actividad Reciente de Retiros</h3>
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Usuario IG</th>
+                    <th>Producto</th>
+                    <th>Estado de Pago</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @coleccionista_retro</td>
+                    <td>Álbum Pokémon + 5 Sobres</td>
+                    <td class="estado-pago"><span class="badge pending">Transferencia x Validar</span></td>
+                    <td class="accion-btn"><button class="btn-custom btn-outline-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)">Validar</button></td>
+                </tr>
+                <tr>
+                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @manga_fan99</td>
+                    <td>Manga One Piece Vol. 102</td>
+                    <td class="estado-pago"><span class="badge completed">Pago Validado</span></td>
+                    <td class="accion-btn"><button class="btn-custom btn-primary-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)"><i class="fa-solid fa-check"></i> Entregar</button></td>
+                </tr>
+                <tr>
+                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @figuras_chile</td>
+                    <td>Funko Pop Batman Retro</td>
+                    <td class="estado-pago"><span class="badge pending">Transferencia x Validar</span></td>
+                    <td class="accion-btn"><button class="btn-custom btn-outline-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)">Validar</button></td>
+                </tr>
+                <tr>
+                    <td><i class="fa-solid fa-store" style="color: var(--text-muted); margin-right: 8px;"></i> Cliente Local</td>
+                    <td>Figura S.H. Figuarts Goku</td>
+                    <td class="estado-pago"><span class="badge completed">Transbank (POS)</span></td>
+                    <td class="accion-btn"><span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Entregado</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Accesos Rápidos -->
+    <div class="quick-actions">
+        <div class="glass-panel" style="flex-grow: 1;">
+            <h3 class="section-title"><i class="fa-solid fa-rocket"></i> Accesos Rápidos</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+                <a href="/retiro-rapido" class="action-card">
+                    <div class="action-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="action-text"><h4>Módulo Retiro Rápido</h4><p>Valida transferencias y entrega productos al instante.</p></div>
+                </a>
+                <a href="/caja" class="action-card">
+                    <div class="action-icon" style="color: var(--kt-yellow); border-color: rgba(251, 192, 45, 0.2);"><i class="fa-solid fa-cash-register"></i></div>
+                    <div class="action-text"><h4>Punto de Venta Local</h4><p>Registra ventas presenciales (Transbank / Efectivo).</p></div>
+                </a>
+                <a href="/cuadre" class="action-card">
+                    <div class="action-icon" style="color: var(--text-main); border-color: rgba(255, 255, 255, 0.1);"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="action-text"><h4>Cuadratura de Caja</h4><p>Cierre de turno separando transferencias de tarjetas.</p></div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cambiarEstado(boton) {
+        const fila = boton.closest('tr');
+        const celdaEstado = fila.querySelector('.estado-pago');
+        const celdaAccion = fila.querySelector('.accion-btn');
+        
+        if (boton.innerText.trim() === 'Validar') {
+            // Animación y cambio de estado a "Entregar"
+            celdaEstado.innerHTML = '<span class="badge completed">Pago Validado</span>';
+            boton.className = 'btn-custom btn-primary-custom';
+            boton.innerHTML = '<i class="fa-solid fa-check"></i> Entregar';
+        } else if (boton.innerText.trim() === 'Entregar') {
+            // Animación y cambio de estado a "Entregado"
+            celdaAccion.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Entregado</span>';
+        }
+    }
+</script>
+{% endblock %}
