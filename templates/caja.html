@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.caja-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start; }
+.qty-input, .select-input {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    padding: 8px 10px;
+}
+.qty-input { width: 80px; text-align: center; }
+.select-input { width: 100%; height: 42px; }
+.qty-input:focus, .select-input:focus { outline: none; border-color: var(--kt-yellow); box-shadow: 0 0 10px var(--kt-yellow-glow); }
+.section-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.section-title i { color: var(--kt-yellow); }
+.custom-table { width: 100%; border-collapse: collapse; }
+.custom-table th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.custom-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 0.9rem; }
+.stock-bajo { color: var(--kt-red); font-weight: 600; }
+.aviso { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; }
+.aviso.error { background: rgba(230,36,41,0.12); border: 1px solid rgba(230,36,41,0.4); color: #ff6b6b; }
+.aviso.exito { background: rgba(0,230,118,0.12); border: 1px solid rgba(0,230,118,0.4); color: #00e676; }
+.lbl { display: block; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+@media (max-width: 1100px) { .caja-grid { grid-template-columns: 1fr; } }
+</style>
+
+{% if error %}
+<div class="aviso error"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+{% endif %}
+
+{% if venta_ok %}
+<div class="aviso exito">
+    <i class="fa-solid fa-circle-check"></i>
+    Venta #{{ venta_ok['id_venta'] }} registrada: {{ venta_ok['monto_total'] | clp }}
+    ({{ venta_ok['metodo_pago'] | capitalize }}). El stock fue actualizado.
+</div>
+{% endif %}
+
+<form method="POST" action="/caja" id="form-venta" onsubmit="return validarVenta(event)">
+    <div class="caja-grid">
+        <div class="glass-panel">
+            <h3 class="section-title"><i class="fa-solid fa-boxes-stacked"></i> Productos</h3>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr>
+                        <td>{{ p['nombre'] }}</td>
+                        <td>{{ p['categoria'] }}</td>
+                        <td>{{ p['precio'] | clp }}</td>
+                        <td class="{{ 'stock-bajo' if p['stock_disponible'] <= 3 else '' }}">{{ p['stock_disponible'] }}</td>
+                        <td>
+                            <input type="number" class="qty-input" name="cant_{{ p['id_producto'] }}"
+                                   min="0" max="{{ [p['stock_disponible'], 99] | min }}" value="0"
+                                   data-precio="{{ p['precio'] }}" {{ 'disabled' if p['stock_disponible'] == 0 }}
+                                   oninput="actualizarTotal()">
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="color: var(--text-muted);">No hay productos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="glass-panel">
+            <h3 class="section-title"><i class="fa-solid fa-cash-register"></i> Resumen de la venta</h3>
+            <div style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">Total a cobrar</div>
+            <div id="total" style="font-family: 'Orbitron', sans-serif; font-size: 2.2rem; font-weight: 700; margin: 8px 0 24px;">$0</div>
+
+            <label class="lbl" for="metodo_pago">Método de pago (obligatorio)</label>
+            <select name="metodo_pago" id="metodo_pago" class="select-input" required>
+                <option value="">-- Seleccionar --</option>
+                {% for m in metodos %}
+                <option value="{{ m }}">{{ m | capitalize }}</option>
+                {% endfor %}
+            </select>
+
+            <p id="msg-validacion" style="color: #ff6b6b; font-size: 0.85rem; margin-top: 12px; min-height: 20px;"></p>
+
+            <button type="submit" class="btn-custom btn-primary-custom" style="width: 100%; justify-content: center; margin-top: 8px;">
+                <i class="fa-solid fa-check"></i> Registrar venta
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function formatoCLP(n) {
+    return '$' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function actualizarTotal() {
+    let total = 0;
+    document.querySelectorAll('.qty-input').forEach(i => {
+        total += (parseInt(i.value) || 0) * parseInt(i.dataset.precio);
+    });
+    document.getElementById('total').innerText = formatoCLP(total);
+    return total;
+}
+
+function validarVenta(e) {
+    const msg = document.getElementById('msg-validacion');
+    msg.innerText = '';
+    if (actualizarTotal() <= 0) {
+        msg.innerText = 'Agrega al menos un producto.';
+        return false;
+    }
+    if (!document.getElementById('metodo_pago').value) {
+        msg.innerText = 'Selecciona el método de pago.';
+        return false;
+    }
+    return true;
+}
+</script>
+{% endblock %}

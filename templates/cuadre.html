@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.cuadre-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px; }
+.stat-title { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+.stat-value { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 700; margin-top: 14px; }
+.stat-sub { color: var(--text-muted); font-size: 0.8rem; margin-top: 8px; }
+.section-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.section-title i { color: var(--kt-yellow); }
+.custom-table { width: 100%; border-collapse: collapse; }
+.custom-table th { text-align: left; padding: 12px; color: var(--text-muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.custom-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 0.9rem; }
+.filtro { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
+.date-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: var(--text-main); padding: 9px 12px; font-family: 'Inter', sans-serif; color-scheme: dark; }
+.aviso-error { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; background: rgba(230,36,41,0.12); border: 1px solid rgba(230,36,41,0.4); color: #ff6b6b; font-size: 0.9rem; }
+@media (max-width: 1200px) { .cuadre-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+
+{% if error %}
+<div class="aviso-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+{% endif %}
+
+<form method="GET" action="/cuadre" class="filtro">
+    <label for="fecha" style="color: var(--text-muted);">Fecha del cuadre:</label>
+    <input type="date" id="fecha" name="fecha" class="date-input" value="{{ fecha }}" max="{{ hoy }}" required>
+    <button type="submit" class="btn-custom btn-outline-custom"><i class="fa-solid fa-magnifying-glass"></i> Ver cuadre</button>
+</form>
+
+<div class="cuadre-grid">
+    <div class="glass-panel">
+        <div class="stat-title">Tarjeta <i class="fa-solid fa-credit-card" style="color: var(--kt-red);"></i></div>
+        <div class="stat-value">{{ por_metodo['tarjeta']['total'] | clp }}</div>
+        <div class="stat-sub">{{ por_metodo['tarjeta']['cantidad'] }} venta(s)</div>
+    </div>
+    <div class="glass-panel">
+        <div class="stat-title">Efectivo <i class="fa-solid fa-money-bill-wave" style="color: #00e676;"></i></div>
+        <div class="stat-value">{{ por_metodo['efectivo']['total'] | clp }}</div>
+        <div class="stat-sub">{{ por_metodo['efectivo']['cantidad'] }} venta(s)</div>
+    </div>
+    <div class="glass-panel">
+        <div class="stat-title">Transferencia <i class="fa-solid fa-building-columns" style="color: #00f3ff;"></i></div>
+        <div class="stat-value">{{ por_metodo['transferencia']['total'] | clp }}</div>
+        <div class="stat-sub">{{ por_metodo['transferencia']['cantidad'] }} venta(s)</div>
+    </div>
+    <div class="glass-panel" style="border-bottom: 3px solid var(--kt-yellow);">
+        <div class="stat-title">Total del día <i class="fa-solid fa-scale-balanced" style="color: var(--kt-yellow);"></i></div>
+        <div class="stat-value">{{ total_dia | clp }}</div>
+        <div class="stat-sub">{{ n_ventas }} venta(s) en total</div>
+    </div>
+</div>
+
+<div class="glass-panel">
+    <h3 class="section-title"><i class="fa-solid fa-list"></i> Ventas del {{ fecha }}</h3>
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th>N°</th>
+                <th>Hora</th>
+                <th>Detalle</th>
+                <th>Método</th>
+                <th>Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in ventas %}
+            <tr>
+                <td>#{{ v['id_venta'] }}</td>
+                <td>{{ v['hora'] }}</td>
+                <td>{{ v['detalle'] }}</td>
+                <td>{{ v['metodo_pago'] | capitalize }}</td>
+                <td>{{ v['monto_total'] | clp }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" style="color: var(--text-muted);">No hay ventas registradas en esta fecha.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

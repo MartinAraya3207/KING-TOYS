@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, render_template_string
+from ventas import bp as ventas_bp, inicializar_bd  # Módulo de Benjamín
 
 app = Flask(__name__)
+app.register_blueprint(ventas_bp)
+inicializar_bd()
 
 @app.route('/')
 def home():
@@ -37,10 +40,6 @@ dummy_template = '''
 {% endblock %}
 '''
 
-@app.route('/caja')
-def caja():
-    return render_template_string(dummy_template, titulo="Caja (Ventas)", responsable="Benjamín", icon="fa-solid fa-cash-register")
-
 @app.route('/retiro-rapido')
 def retiro_rapido():
     return render_template_string(dummy_template, titulo="Retiro Rápido", responsable="Martín", icon="fa-solid fa-bolt")
@@ -52,10 +51,6 @@ def reservas():
 @app.route('/inventario')
 def inventario():
     return render_template_string(dummy_template, titulo="Inventario", responsable="Ángel y Benjamín", icon="fa-solid fa-boxes-stacked")
-
-@app.route('/cuadre')
-def cuadre():
-    return render_template_string(dummy_template, titulo="Cuadratura de Caja", responsable="Benjamín", icon="fa-solid fa-scale-balanced")
 
 @app.route('/logout')
 def logout():
