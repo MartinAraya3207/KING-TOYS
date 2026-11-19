@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+.DS_Store
+*.db
+
+
+# Archivos temporales y respaldos locales
+productos_migracion.csv
+*_sqlite_backup.py
+
+# Respaldos locales
+database/*_backup.sql
