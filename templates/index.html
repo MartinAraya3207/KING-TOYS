@@ -69,7 +69,7 @@
             <div class="stat-icon yellow"><i class="fa-solid fa-box-open"></i></div>
         </div>
         <div>
-            <div class="stat-value text-gradient-yellow">14</div>
+            <div class="stat-value text-gradient-yellow">{{ retiros_pendientes }}</div>
             <div class="stat-footer" style="color: var(--text-muted);"><i class="fa-regular fa-clock"></i><span>Requieren validación</span></div>
         </div>
     </div>
@@ -118,30 +118,24 @@
                 </tr>
             </thead>
             <tbody>
+                {% for reserva in reservas %}
                 <tr>
-                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @coleccionista_retro</td>
-                    <td>Álbum Pokémon + 5 Sobres</td>
-                    <td class="estado-pago"><span class="badge pending">Transferencia x Validar</span></td>
-                    <td class="accion-btn"><button class="btn-custom btn-outline-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)">Validar</button></td>
+                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i>@{{ reserva['usuario_instagram'] }}<br><small>{{ reserva['codigo'] }}</small></td>
+                    <td>{{ reserva['productos'] }}</td>
+                    <td>{{ reserva['estado'] | estado_reserva }}</td>
+                    <td>
+                        {% if reserva['estado'] == 'pendiente_validacion' %}
+                        <a class="btn-custom btn-outline-custom" style="padding: 5px 12px; font-size: 0.75rem;" href="{{ url_for('reservas.reservas') }}">Revisar pago</a>
+                        {% elif reserva['estado'] == 'lista_retiro' %}
+                        <a class="btn-custom btn-primary-custom" style="padding: 5px 12px; font-size: 0.75rem;" href="{{ url_for('reservas.retiro_rapido', q=reserva['codigo']) }}">Retirar</a>
+                        {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">{{ reserva['monto_total'] | clp }}</span>
+                        {% endif %}
+                    </td>
                 </tr>
-                <tr>
-                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @manga_fan99</td>
-                    <td>Manga One Piece Vol. 102</td>
-                    <td class="estado-pago"><span class="badge completed">Pago Validado</span></td>
-                    <td class="accion-btn"><button class="btn-custom btn-primary-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)"><i class="fa-solid fa-check"></i> Entregar</button></td>
-                </tr>
-                <tr>
-                    <td><i class="fa-brands fa-instagram" style="color: #E1306C; margin-right: 8px;"></i> @figuras_chile</td>
-                    <td>Funko Pop Batman Retro</td>
-                    <td class="estado-pago"><span class="badge pending">Transferencia x Validar</span></td>
-                    <td class="accion-btn"><button class="btn-custom btn-outline-custom" style="padding: 5px 12px; font-size: 0.75rem;" onclick="cambiarEstado(this)">Validar</button></td>
-                </tr>
-                <tr>
-                    <td><i class="fa-solid fa-store" style="color: var(--text-muted); margin-right: 8px;"></i> Cliente Local</td>
-                    <td>Figura S.H. Figuarts Goku</td>
-                    <td class="estado-pago"><span class="badge completed">Transbank (POS)</span></td>
-                    <td class="accion-btn"><span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Entregado</span></td>
-                </tr>
+                {% else %}
+                <tr><td colspan="4" style="color: var(--text-muted);">Todavía no hay retiros registrados.</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -168,21 +162,4 @@
     </div>
 </div>
 
-<script>
-    function cambiarEstado(boton) {
-        const fila = boton.closest('tr');
-        const celdaEstado = fila.querySelector('.estado-pago');
-        const celdaAccion = fila.querySelector('.accion-btn');
-        
-        if (boton.innerText.trim() === 'Validar') {
-            // Animación y cambio de estado a "Entregar"
-            celdaEstado.innerHTML = '<span class="badge completed">Pago Validado</span>';
-            boton.className = 'btn-custom btn-primary-custom';
-            boton.innerHTML = '<i class="fa-solid fa-check"></i> Entregar';
-        } else if (boton.innerText.trim() === 'Entregar') {
-            // Animación y cambio de estado a "Entregado"
-            celdaAccion.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 500;">Entregado</span>';
-        }
-    }
-</script>
 {% endblock %}

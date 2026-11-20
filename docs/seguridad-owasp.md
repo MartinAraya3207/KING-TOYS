@@ -9,6 +9,8 @@
 - **Protección CSRF:** token aleatorio por sesión, comparado en tiempo constante, obligatorio en todos los formularios POST/PUT/PATCH/DELETE, incluido login, ventas y cierre de sesión.
 - **Inyección (OWASP A03):** las consultas de ventas usan placeholders SQLite (`?`) y parámetros separados. La fecha y el ID del recibo también se enlazan como parámetros. No concatenar valores del usuario dentro del SQL.
 - **Validación:** cantidad de productos requiere dígitos ASCII, está limitada a 99 y se valida contra stock disponible; método de pago usa una lista permitida; fecha se analiza como `YYYY-MM-DD`; búsqueda se recorta a 100 caracteres. La base agrega restricciones CHECK, claves foráneas y unicidad.
+- **Reservas y comprobantes:** se valida el usuario de Instagram, cantidad, existencia y stock dentro de una transacción SQLite; las reservas retienen stock hasta aprobarse o rechazarse. Se aceptan solo PDF/PNG/JPG con firma comprobada y máximo 5 MB; el nombre del archivo se genera en el servidor y se guarda fuera del directorio estático. La descarga pasa por una ruta autenticada.
+- **Validación de transferencias y retiro:** la aprobación/rechazo solo se permite para reservas pendientes; aprobar registra la venta una sola vez. Rechazar devuelve el stock. El retiro es un POST protegido por CSRF y solo puede completar reservas aprobadas.
 - **XSS:** las vistas usan autoescape de Jinja; valores de búsqueda y ventas se renderizan como texto. No usar `safe` para datos de usuario.
 - **Errores e información sensible:** el usuario recibe mensajes genéricos y no recibe trazas ni detalles SQL; los errores internos se registran en el servidor. No activar `debug` en despliegue.
 - **Cabeceras:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` y Content-Security-Policy.
@@ -20,8 +22,10 @@
 | --- | --- |
 | `app.py` y rutas de pantalla | Autenticación global; mensajes Jinja autoescapados; búsqueda acotada; errores controlados. |
 | Ventas y cuadre (`ventas.py`) | SQL parametrizado en lectura, registro, actualización de stock y cuadre. Validación del carrito y del método de pago en servidor. El stock se actualiza con condición atómica y la venta usa transacción con rollback. |
-| Formularios (`templates/`) | Login, venta y logout incluyen token CSRF; Jinja escapa valores. |
-| Inventario, retiro y reservas | En esta copia solo son pantallas temporales de demostración; no hay consultas ni formularios de negocio que revisar. |
+| Reservas y transferencias (`reservas.py`) | Registro con comprobante privado, retención/restitución de stock, aprobación/rechazo transaccional y registro de venta cuando se aprueba. |
+| Retiro rápido (`reservas.py`) | Búsqueda por código o Instagram; la entrega solo cambia una reserva aprobada a retirada. |
+| Formularios (`templates/`) | Login, ventas, reservas, aprobación/rechazo, retiro y logout incluyen token CSRF; Jinja escapa valores. |
+| Comprobantes | El archivo se entrega como descarga desde una ruta autenticada, nunca como recurso público estático. La verificación de pago sigue siendo manual contra el banco. |
 
 ## Checklist de despliegue
 
@@ -29,6 +33,7 @@
 - [ ] Publicar exclusivamente detrás de HTTPS y activar `KINGTOYS_HTTPS=true`.
 - [ ] Mantener Flask en versión soportada y actualizar dependencias según el entorno final.
 - [ ] Rotar secreto y contraseña si se exponen; excluir y respaldar de forma segura la base real.
+- [ ] Proteger y respaldar la carpeta `instance/comprobantes_reservas/` con acceso restringido; definir política de retención/borrado de comprobantes.
 - [ ] Reunir las referencias aportadas por los demás integrantes: esta copia no contiene bibliografía ni código de sus módulos.
 
 La CSP permite estilos y scripts inline porque las plantillas existentes contienen CSS y JavaScript inline. Para endurecerla, trasladar esos bloques a archivos estáticos y retirar `'unsafe-inline'`.

@@ -22,6 +22,32 @@ CREATE TABLE IF NOT EXISTS detalle_venta (
     precio_unitario INTEGER NOT NULL CHECK (precio_unitario > 0)
 );
 
+CREATE TABLE IF NOT EXISTS reserva (
+    id_reserva INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo TEXT NOT NULL UNIQUE,
+    usuario_instagram TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    monto_total INTEGER NOT NULL CHECK (monto_total > 0),
+    comprobante_archivo TEXT NOT NULL,
+    estado TEXT NOT NULL DEFAULT 'pendiente_validacion'
+        CHECK (estado IN ('pendiente_validacion', 'lista_retiro', 'rechazada', 'retirada')),
+    validada_por TEXT,
+    fecha_validacion TEXT,
+    fecha_retiro TEXT,
+    id_venta INTEGER UNIQUE REFERENCES venta(id_venta)
+);
+
+CREATE TABLE IF NOT EXISTS detalle_reserva (
+    id_detalle_reserva INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_reserva INTEGER NOT NULL REFERENCES reserva(id_reserva),
+    id_producto INTEGER NOT NULL REFERENCES producto(id_producto),
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_unitario INTEGER NOT NULL CHECK (precio_unitario > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reserva_usuario_estado
+    ON reserva(usuario_instagram, estado);
+
 INSERT OR IGNORE INTO producto (nombre, precio, stock_disponible, categoria) VALUES
 ('Álbum Stitch Panini', 4990, 12, 'Álbumes'),
 ('Sobre de láminas Panini', 990, 80, 'Álbumes'),

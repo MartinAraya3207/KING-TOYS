@@ -8,6 +8,7 @@ from flask import Flask, abort, redirect, render_template, render_template_strin
 from werkzeug.security import check_password_hash
 
 from ventas import bp as ventas_bp, inicializar_bd
+from reservas import bp as reservas_bp, contar_reservas_pendientes, reservas_recientes
 
 
 def create_app(test_config=None):
@@ -19,13 +20,14 @@ def create_app(test_config=None):
         SESSION_COOKIE_SECURE=os.environ.get("KINGTOYS_HTTPS", "").lower() == "true",
         PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
         SESSION_REFRESH_EACH_REQUEST=True,
-        MAX_CONTENT_LENGTH=16 * 1024,
+        MAX_CONTENT_LENGTH=5 * 1024 * 1024 + 128 * 1024,
     )
     if test_config:
         app.config.update(test_config)
 
     logging.basicConfig(level=logging.INFO)
     app.register_blueprint(ventas_bp)
+    app.register_blueprint(reservas_bp)
     inicializar_bd()
 
     @app.context_processor
@@ -77,7 +79,11 @@ def create_app(test_config=None):
 
     @app.route("/", endpoint="home")
     def home():
-        return render_template("index.html")
+        return render_template(
+            "index.html",
+            reservas=reservas_recientes(),
+            retiros_pendientes=contar_reservas_pendientes(),
+        )
 
     @app.route('/buscar')
     def buscar():
@@ -86,14 +92,6 @@ def create_app(test_config=None):
         {% extends "base.html" %}{% block content %}<div class="glass-panel" style="text-align:center;padding:50px;">
         <h2>Resultados de búsqueda</h2><p>Buscando en inventario o Instagram: <strong>{{ termino }}</strong></p>
         <a href="/" class="btn-custom btn-outline-custom mt-4">Volver al inicio</a></div>{% endblock %}''', termino=termino)
-
-    @app.route('/retiro-rapido')
-    def retiro_rapido():
-        return render_template_string(dummy_template, titulo="Retiro Rápido", responsable="Martín", icon="fa-solid fa-bolt")
-
-    @app.route('/reservas')
-    def reservas():
-        return render_template_string(dummy_template, titulo="Reservas IG", responsable="Martín", icon="fa-brands fa-instagram")
 
     @app.route('/inventario')
     def inventario():
@@ -106,6 +104,7 @@ def create_app(test_config=None):
 
     @app.errorhandler(400)
     @app.errorhandler(404)
+    @app.errorhandler(413)
     @app.errorhandler(500)
     def safe_error(error):
         if getattr(error, "code", None) == 500:

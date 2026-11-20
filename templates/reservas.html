@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.reserva-grid { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(400px, 1.5fr); gap: 24px; align-items: start; }
+.reserva-input { width: 100%; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: var(--text-main); padding: 10px 12px; margin: 8px 0 16px; }
+.reserva-input:focus { outline: none; border-color: var(--kt-yellow); }
+.reserva-table { width: 100%; border-collapse: collapse; }
+.reserva-table th, .reserva-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: top; }
+.reserva-table th { color: var(--text-muted); font-size: .75rem; text-transform: uppercase; }
+.reserva-table td { font-size: .85rem; }
+.aviso { padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; }
+.aviso.error { background: rgba(230,36,41,.12); color: #ff8585; }
+.aviso.exito { background: rgba(0,230,118,.12); color: #00e676; }
+.btn-small { padding: 6px 10px; font-size: .7rem; margin: 2px; }
+.qty-input { width: 72px; background: rgba(0,0,0,.3); color: var(--text-main); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; padding: 6px; }
+@media (max-width: 1000px) { .reserva-grid { grid-template-columns: 1fr; } }
+</style>
+
+{% if error %}<div class="aviso error">{{ error }}</div>{% endif %}
+{% if creada %}<div class="aviso exito">Reserva registrada. Código: <strong>{{ creada }}</strong>. Guarda este código para el retiro.</div>{% endif %}
+{% if aviso == 'transferencia_aprobada' %}<div class="aviso exito">Transferencia aprobada; la venta fue registrada y la reserva está lista para retiro.</div>{% endif %}
+{% if aviso == 'transferencia_rechazada' %}<div class="aviso exito">Comprobante rechazado y stock liberado.</div>{% endif %}
+{% if aviso == 'reserva_ya_procesada' %}<div class="aviso error">La reserva ya fue procesada; no se modificó.</div>{% endif %}
+{% if aviso == 'reserva_no_encontrada' %}<div class="aviso error">No se encontró la reserva.</div>{% endif %}
+{% if aviso == 'error' %}<div class="aviso error">No se pudo actualizar la reserva. Intenta nuevamente.</div>{% endif %}
+
+<div class="reserva-grid">
+    <section class="glass-panel">
+        <h2 class="section-title"><i class="fa-brands fa-instagram"></i> Registrar reserva (RF-02)</h2>
+        <p style="color:var(--text-muted); margin-bottom:18px;">La reserva descuenta temporalmente el stock. Al aprobar la transferencia se registra la venta.</p>
+        <form method="post" action="{{ url_for('reservas.reservas') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="usuario_instagram">Usuario de Instagram</label>
+            <input class="reserva-input" type="text" id="usuario_instagram" name="usuario_instagram" maxlength="31" placeholder="@usuario" value="{{ request.form.get('usuario_instagram', '') }}" required>
+            <label for="comprobante">Comprobante de transferencia (PDF, PNG o JPG; máximo 5 MB)</label>
+            <input class="reserva-input" type="file" id="comprobante" name="comprobante" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required>
+            <table class="reserva-table">
+                <thead><tr><th>Producto</th><th>Precio</th><th>Disponible</th><th>Cantidad</th></tr></thead>
+                <tbody>
+                {% for p in productos %}
+                    <tr>
+                        <td>{{ p['nombre'] }}</td>
+                        <td>{{ p['precio'] | clp }}</td>
+                        <td>{{ p['stock_disponible'] }}</td>
+                        <td><input class="qty-input" type="number" name="cant_{{ p['id_producto'] }}" min="0" max="{{ [p['stock_disponible'], 99] | min }}" value="{{ request.form.get('cant_' ~ p['id_producto'], '0') }}" {% if not p['stock_disponible'] %}disabled{% endif %}></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4">No hay productos registrados.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn-custom btn-primary-custom" style="margin-top:20px;"><i class="fa-solid fa-bookmark"></i> Crear reserva</button>
+        </form>
+    </section>
+
+    <section class="glass-panel">
+        <h2 class="section-title"><i class="fa-solid fa-money-check-dollar"></i> Validación de transferencias</h2>
+        <div style="overflow-x:auto;">
+            <table class="reserva-table">
+                <thead><tr><th>Código / Instagram</th><th>Productos / Total</th><th>Estado</th><th>Comprobante / Acción</th></tr></thead>
+                <tbody>
+                {% for item in reservas %}
+                    <tr>
+                        <td><strong>{{ item['codigo'] }}</strong><br>@{{ item['usuario_instagram'] }}<br><small>{{ item['fecha'] }}</small></td>
+                        <td>{{ item['productos'] }}<br><strong>{{ item['monto_total'] | clp }}</strong></td>
+                        <td>{{ item['estado'] | estado_reserva }}</td>
+                        <td>
+                            <a class="btn-custom btn-outline-custom btn-small" href="{{ url_for('reservas.descargar_comprobante', id_reserva=item['id_reserva']) }}">Ver comprobante</a>
+                            {% if item['estado'] == 'pendiente_validacion' %}
+                            <form method="post" action="{{ url_for('reservas.validar_transferencia', id_reserva=item['id_reserva']) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button class="btn-custom btn-primary-custom btn-small" name="accion" value="aprobar" type="submit">Aprobar</button>
+                                <button class="btn-custom btn-outline-custom btn-small" name="accion" value="rechazar" type="submit">Rechazar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" style="color:var(--text-muted);">Todavía no hay reservas.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

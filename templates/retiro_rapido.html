@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.retiro-input { width: min(100%, 520px); background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: var(--text-main); padding: 12px; }
+.retiro-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+.retiro-table th, .retiro-table td { text-align: left; padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: top; }
+.retiro-table th { color: var(--text-muted); font-size: .75rem; text-transform: uppercase; }
+.aviso { padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; }
+.aviso.error { background: rgba(230,36,41,.12); color: #ff8585; }
+.aviso.exito { background: rgba(0,230,118,.12); color: #00e676; }
+</style>
+
+<section class="glass-panel">
+    <h2 class="section-title"><i class="fa-solid fa-bolt"></i> Retiro Rápido (RF-01)</h2>
+    <p style="color:var(--text-muted); margin-bottom:20px;">Busca por código de reserva o usuario de Instagram. Solo las transferencias aprobadas pueden marcarse como retiradas.</p>
+    {% if aviso == 'retiro_completado' %}<div class="aviso exito">Retiro registrado correctamente.</div>{% endif %}
+    {% if aviso == 'reserva_no_lista' %}<div class="aviso error">La reserva no está lista para retiro o ya fue retirada.</div>{% endif %}
+    {% if aviso == 'error' %}<div class="aviso error">No se pudo completar el retiro. Intenta nuevamente.</div>{% endif %}
+    {% if error %}<div class="aviso error">{{ error }}</div>{% endif %}
+    <form method="get" action="{{ url_for('reservas.retiro_rapido') }}">
+        <label for="q">Código de reserva o usuario de Instagram</label><br>
+        <input class="retiro-input" type="search" id="q" name="q" value="{{ termino }}" placeholder="RSV-ABCD1234 o @usuario" maxlength="100" required>
+        <button type="submit" class="btn-custom btn-primary-custom"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+    </form>
+
+    {% if termino and not error %}
+    <div style="overflow-x:auto;">
+        <table class="retiro-table">
+            <thead><tr><th>Reserva</th><th>Cliente / Productos</th><th>Total</th><th>Estado / Acción</th></tr></thead>
+            <tbody>
+            {% for item in resultados %}
+                {% set r = item['reserva'] %}
+                <tr>
+                    <td><strong>{{ r['codigo'] }}</strong><br><small>{{ r['fecha'] }}</small></td>
+                    <td>@{{ r['usuario_instagram'] }}<br>{{ item['productos'] }}</td>
+                    <td>{{ r['monto_total'] | clp }}</td>
+                    <td>
+                        {{ r['estado'] | estado_reserva }}
+                        {% if r['estado'] == 'lista_retiro' %}
+                        <form method="post" action="{{ url_for('reservas.completar_retiro', id_reserva=r['id_reserva']) }}" style="margin-top:8px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-custom btn-primary-custom">Entregar producto</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" style="color:var(--text-muted);">No hay reservas asociadas a esa búsqueda.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

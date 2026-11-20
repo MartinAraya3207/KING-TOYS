@@ -20,8 +20,12 @@ def conectar():
 
 def inicializar_bd():
     """Crea las tablas si no existen (ejecuta el script SQL)."""
-    with conectar() as conn, open(SQL_PATH, encoding='utf-8') as f:
-        conn.executescript(f.read())
+    conn = conectar()
+    try:
+        with open(SQL_PATH, encoding='utf-8') as f:
+            conn.executescript(f.read())
+    finally:
+        conn.close()
 
 @bp.app_template_filter('clp')
 def formato_clp(valor):
