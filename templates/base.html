@@ -172,7 +172,7 @@
         <div class="user-profile">
             <div class="avatar">V1</div>
             <div class="user-info">
-                <div class="user-name">Admin Local</div>
+                <div class="user-name">{{ session.get('vendedor', 'Vendedor') }}</div>
                 <div class="user-role">Vendedor Principal</div>
             </div>
             <a href="/logout" class="logout-btn" title="Cerrar Sesión"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
